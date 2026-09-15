@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Durga Puja Food Gate Scanner</title>
+<script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
+<style>
+  body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; margin: 0; padding: 10px; }
+  h2 { color: #d9534f; margin-top: 10px; }
+  #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 10px; overflow: hidden; }
+  .card { max-width: 400px; margin: 20px auto; padding: 20px; border-radius: 8px; background: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
+  .card p { text-align: left; margin: 6px 0; }
+  .btn { background: #5cb85c; color: white; border: none; padding: 12px 20px; font-size: 16px;
+    border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .btn-danger { background: #d9534f; }
+  .alert-success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; }
+  .alert-danger { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; }
+  .alert-warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; }
+  #status-msg { font-size: 14px; color: #555; min-height: 18px; }
+</style>
+</head>
+<body>
+
+<h2>Durga Puja Food Gate Scanner</h2>
+<div id="reader"></div>
+<div id="status-msg"></div>
+
+<div id="result-card" class="card">
+  <div id="alert-box"></div>
+  <p><strong>Coupon ID:</strong> <span id="res-id"></span></p>
+  <p><strong>Name:</strong> <span id="res-name"></span></p>
+  <p><strong>Meal:</strong> <span id="res-meal"></span></p>
+  <div id="action-area"></div>
+</div>
+
+<script>
+// Deployed Google Apps Script Web App URL
+const WEB_APP_URL = "https://script.google.com/macros/s/AKfycbw6xz9fmRT5o593ctjEOjN9GWDk9MwXHQ-n4wj5l3Lz5RDLuOPCK9Nmsh12-wdy0k-l/exec";
+
+let currentScannedId = "";
+
+const resultCard = document.getElementById('result-card');
+const alertBox = document.getElementById('alert-box');
+const actionArea = document.getElementById('action-area');
+const statusMsg = document.getElementById('status-msg');
+
+let html5QrcodeScanner = new Html5QrcodeScanner(
+  "reader", { fps: 10, qrbox: 250 }, false);
+html5QrcodeScanner.render(onScanSuccess, onScanFailure);
+
+function onScanSuccess(decodedText) {
+  html5QrcodeScanner.pause(true);
+  currentScannedId = decodedText.trim();
+  fetchCouponDetails(currentScannedId);
+}
+
+function onScanFailure() {
+  // ignore continuous scan misses
+}
+
+function fetchCouponDetails(couponId) {
+  statusMsg.innerText = "Checking coupon...";
+  fetch(`${WEB_APP_URL}?action=check&id=${encodeURIComponent(couponId)}`)
+    .then(response => response.json())
+    .then(data => {
+      statusMsg.innerText = "";
+      resultCard.style.display = 'block';
+      document.getElementById('res-id').innerText = data.couponId || couponId;
+      document.getElementById('res-name').innerText = data.name || "N/A";
+      document.getElementById('res-meal').innerText = data.mealType || "N/A";
+
+      if (data.status === "success") {
+        if (data.couponStatus === "Redeemed") {
+          alertBox.className = "alert-danger";
+          alertBox.innerHTML = "<strong>WARNING:</strong> Coupon ALREADY Redeemed!";
+          actionArea.innerHTML = `<button class="btn" onclick="resetScanner()">Scan Next</button>`;
+        } else {
+          alertBox.className = "alert-success";
+          alertBox.innerHTML = "<strong>Valid Coupon!</strong> Ready to redeem.";
+          actionArea.innerHTML = `<button class="btn" onclick="redeemCoupon('${couponId}')">Allow Entry &amp; Redeem</button>
+                                   <button class="btn btn-danger" onclick="resetScanner()">Cancel</button>`;
+        }
+      } else {
+        alertBox.className = "alert-danger";
+        alertBox.innerHTML = "<strong>Error:</strong> " + data.message;
+        actionArea.innerHTML = `<button class="btn" onclick="resetScanner()">Scan Next</button>`;
+      }
+    })
+    .catch(() => {
+      statusMsg.innerText = "";
+      resultCard.style.display = 'block';
+      alertBox.className = "alert-warning";
+      alertBox.innerHTML = "<strong>Network Error.</strong> Check connection and try again.";
+      actionArea.innerHTML = `<button class="btn" onclick="fetchCouponDetails('${couponId}')">Retry</button>
+                               <button class="btn btn-danger" onclick="resetScanner()">Scan Next</button>`;
+    });
+}
+
+function redeemCoupon(couponId) {
+  actionArea.innerHTML = `<p>Processing...</p>`;
+  fetch(`${WEB_APP_URL}?action=redeem&id=${encodeURIComponent(couponId)}`)
+    .then(response => response.json())
+    .then(data => {
+      if (data.status === "success") {
+        alertBox.className = "alert-success";
+        alertBox.innerHTML = "<strong>Success!</strong> Entry Allowed.";
+      } else if (data.status === "already_redeemed") {
+        alertBox.className = "alert-danger";
+        alertBox.innerHTML = "<strong>WARNING:</strong> " + data.message;
+      } else {
+        alertBox.className = "alert-danger";
+        alertBox.innerHTML = "<strong>Error:</strong> " + data.message;
+      }
+      actionArea.innerHTML = `<button class="btn" onclick="resetScanner()">Scan Next</button>`;
+    })
+    .catch(() => {
+      alertBox.className = "alert-warning";
+      alertBox.innerHTML = "<strong>Network Error.</strong> Redeem may not have been saved.";
+      actionArea.innerHTML = `<button class="btn" onclick="redeemCoupon('${couponId}')">Retry</button>
+                               <button class="btn btn-danger" onclick="resetScanner()">Scan Next</button>`;
+    });
+}
+
+function resetScanner() {
+  resultCard.style.display = 'none';
+  html5QrcodeScanner.resume();
+}
+</script>
+</body>
+</html>
