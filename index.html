@@ -7,18 +7,30 @@
 <script src="https://unpkg.com/html5-qrcode" type="text/javascript"></script>
 <style>
   body { font-family: Arial, sans-serif; text-align: center; background: #f4f4f9; margin: 0; padding: 10px; }
-  h2 { color: #d9534f; margin-top: 10px; }
-  #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 10px; overflow: hidden; }
+  h2 { color: #d9534f; margin-top: 10px; font-size: 22px; }
+  #reader { width: 100%; max-width: 400px; margin: 10px auto; border-radius: 10px; overflow: hidden; }
   .card { max-width: 400px; margin: 20px auto; padding: 20px; border-radius: 8px; background: white;
     box-shadow: 0 2px 8px rgba(0,0,0,0.15); display: none; }
-  .card p { text-align: left; margin: 6px 0; }
-  .btn { background: #5cb85c; color: white; border: none; padding: 12px 20px; font-size: 16px;
-    border-radius: 6px; cursor: pointer; width: 100%; margin-top: 10px; }
+  .card p { text-align: left; margin: 10px 0; font-size: 16px; }
+  #action-area { display: flex; flex-direction: column; gap: 12px; margin-top: 12px; }
+  .btn { background: #5cb85c; color: white; border: none; padding: 16px 20px; font-size: 18px;
+    border-radius: 8px; cursor: pointer; width: 100%; min-height: 52px; }
   .btn-danger { background: #d9534f; }
-  .alert-success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; }
-  .alert-danger { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; }
-  .alert-warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; }
+  .alert-success { background: #d4edda; color: #155724; padding: 15px; border-radius: 5px; margin-bottom: 8px; }
+  .alert-danger { background: #f8d7da; color: #721c24; padding: 15px; border-radius: 5px; margin-bottom: 8px; }
+  .alert-warning { background: #fff3cd; color: #856404; padding: 15px; border-radius: 5px; margin-bottom: 8px; }
   #status-msg { font-size: 14px; color: #555; min-height: 18px; }
+
+  /* Enlarge and space out the html5-qrcode library's own controls */
+  #reader button, #reader select {
+    font-size: 17px !important;
+    padding: 14px 18px !important;
+    border-radius: 8px !important;
+    margin: 10px 6px !important;
+    min-height: 48px;
+  }
+  #reader a { font-size: 16px !important; display: inline-block; margin-top: 14px !important; }
+  #reader__dashboard_section_csr, #reader__dashboard_section_swaplink { margin-top: 10px !important; }
 </style>
 </head>
 <body>
